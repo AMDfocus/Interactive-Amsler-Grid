@@ -1,8 +1,5 @@
-// File: app.js
-// We are using “text/babel” so this file can remain as JSX
-// IMPORTANT: Because we used Babel Standalone, we must reference React and ReactDOM
-//            through global variables, e.g. React.useState, React.useEffect, etc.
-
+/** File: app.js **/
+// We are using Babel Standalone, so avoid any ES module or CommonJS syntax (no 'export' or 'imports').
 const { useRef, useState, useEffect, forwardRef, useImperativeHandle } = React;
 
 // AmslerGrid: renders a 10cm×10cm grid subdivided into 20×20 boxes with central dot,
@@ -37,14 +34,14 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
     for (let i = 0; i <= divisions; i++) {
       // Draw vertical line i
       ctx.beginPath();
-      const vLine = integratedLines.find((l) => l.type === "v" && l.index === i);
+      const vLine = integratedLines.find(l => l.type === "v" && l.index === i);
       if (vLine) {
         const pts = inverse
-          ? vLine.points.map((p) => ({ x: 2 * centerX - p.x, y: p.y }))
+          ? vLine.points.map(p => ({ x: 2 * centerX - p.x, y: p.y }))
           : vLine.points;
         ctx.moveTo(pts[0].x, 0);
         ctx.lineTo(pts[0].x, pts[0].y);
-        pts.forEach((p) => ctx.lineTo(p.x, p.y));
+        pts.forEach(p => ctx.lineTo(p.x, p.y));
         ctx.lineTo(pts[pts.length - 1].x, parseInt(height));
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
@@ -58,14 +55,14 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
 
       // Draw horizontal line i
       ctx.beginPath();
-      const hLine = integratedLines.find((l) => l.type === "h" && l.index === i);
+      const hLine = integratedLines.find(l => l.type === "h" && l.index === i);
       if (hLine) {
         const pts = inverse
-          ? hLine.points.map((p) => ({ x: p.x, y: 2 * centerY - p.y }))
+          ? hLine.points.map(p => ({ x: p.x, y: 2 * centerY - p.y }))
           : hLine.points;
         ctx.moveTo(0, pts[0].y);
         ctx.lineTo(pts[0].x, pts[0].y);
-        pts.forEach((p) => ctx.lineTo(p.x, p.y));
+        pts.forEach(p => ctx.lineTo(p.x, p.y));
         ctx.lineTo(parseInt(width), pts[pts.length - 1].y);
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
@@ -88,7 +85,7 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
     if (drawing && currentLine.length > 1) {
       ctx.beginPath();
       ctx.moveTo(currentLine[0].x, currentLine[0].y);
-      currentLine.forEach((p) => ctx.lineTo(p.x, p.y));
+      currentLine.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.strokeStyle = "red";
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -101,23 +98,14 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
     }
   }, [integratedLines, onDistortionChange]);
 
-  const handleMouseDown = (e) => {
-    setCurrentLine([getPoint(e)]);
-    setDrawing(true);
-  };
-  const handleMouseMove = (e) => {
-    if (drawing) setCurrentLine((l) => [...l, getPoint(e)]);
-  };
-  const handleMouseUp = () => {
-    if (drawing) setLines((l) => [...l, currentLine]);
-    setDrawing(false);
-  };
+  const handleMouseDown = e => { setCurrentLine([getPoint(e)]); setDrawing(true); };
+  const handleMouseMove = e => { if (drawing) setCurrentLine(l => [...l, getPoint(e)]); };
+  const handleMouseUp = () => { if (drawing) setLines(l => [...l, currentLine]); setDrawing(false); };
 
   function integrateStroke() {
-    const stroke = drawing ? currentLine : lines[lines.length - 1] || [];
+    const stroke = drawing ? currentLine : (lines[lines.length - 1] || []);
     if (!stroke.length) return;
-    const xs = stroke.map((p) => p.x),
-      ys = stroke.map((p) => p.y);
+    const xs = stroke.map(p => p.x), ys = stroke.map(p => p.y);
     const dx = Math.max(...xs) - Math.min(...xs);
     const dy = Math.max(...ys) - Math.min(...ys);
     const divisions = 20;
@@ -128,52 +116,40 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
       type = "v";
       index = Math.round(xs.reduce((a, b) => a + b, 0) / xs.length / stepX);
       const sorted = stroke.slice().sort((a, b) => a.y - b.y);
-      const f = (y) => {
+      const f = y => {
         if (y <= sorted[0].y) return sorted[0].x;
         if (y >= sorted[sorted.length - 1].y) return sorted[sorted.length - 1].x;
         for (let i = 0; i < sorted.length - 1; i++) {
-          const p1 = sorted[i],
-            p2 = sorted[i + 1];
+          const p1 = sorted[i], p2 = sorted[i + 1];
           if (y >= p1.y && y <= p2.y) {
             const t = (y - p1.y) / (p2.y - p1.y);
             return p1.x + t * (p2.x - p1.x);
           }
         }
       };
-      pts = Array.from({ length: divisions + 1 }, (_, i) => ({
-        x: f(i * stepY),
-        y: i * stepY,
-      }));
+      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: f(i * stepY), y: i * stepY }));
     } else {
       type = "h";
       index = Math.round(ys.reduce((a, b) => a + b, 0) / ys.length / stepY);
       const sorted = stroke.slice().sort((a, b) => a.x - b.x);
-      const f = (x) => {
+      const f = x => {
         if (x <= sorted[0].x) return sorted[0].y;
         if (x >= sorted[sorted.length - 1].x) return sorted[sorted.length - 1].y;
         for (let i = 0; i < sorted.length - 1; i++) {
-          const p1 = sorted[i],
-            p2 = sorted[i + 1];
+          const p1 = sorted[i], p2 = sorted[i + 1];
           if (x >= p1.x && x <= p2.x) {
             const t = (x - p1.x) / (p2.x - p1.x);
             return p1.y + t * (p2.y - p1.y);
           }
         }
       };
-      pts = Array.from({ length: divisions + 1 }, (_, i) => ({
-        x: i * stepX,
-        y: f(i * stepX),
-      }));
+      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: i * stepX, y: f(i * stepX) }));
     }
-    setIntegratedLines((prev) => [...prev, { type, index, points: pts }]);
+    setIntegratedLines(prev => [...prev, { type, index, points: pts }]);
     setCurrentLine([]);
   }
 
-  function resetGrid() {
-    setLines([]);
-    setCurrentLine([]);
-    setIntegratedLines([]);
-  }
+  function resetGrid() { setLines([]); setCurrentLine([]); setIntegratedLines([]); }
 
   return (
     <canvas
@@ -189,32 +165,21 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
 });
 
 // App: renders only the AmslerGrid with external controls
-export default function FinalAmslerGridApp() {
+function FinalAmslerGridApp() {
   const gridRef = useRef();
   const [inverseView, setInverseView] = useState(false);
-  const handleDistortions = (lines) => {
+  const handleDistortions = lines => {
     console.log("Distortions:", lines);
   };
 
   return (
     <div className="flex flex-col items-center p-4">
-      <h2 className="text-3xl font-bold text-blue-600 mb-4">
-        Interactive 20×20 Amsler Grid
-      </h2>
+      <h2 className="text-3xl font-bold text-blue-600 mb-4">Interactive 20×20 Amsler Grid</h2>
       {/* How-to-use section */}
       <div className="mb-4 text-center">
-        <p className="mb-1">
-          <strong>How to Use:</strong> Draw wavy lines on the grid where you see
-          distortion.
-        </p>
-        <p className="mb-1">
-          Click <em>Next</em> to integrate the stroke into the nearest grid
-          line.
-        </p>
-        <p>
-          Use <em>Reset</em> to clear the grid, or toggle between
-          Distorted/Undistorted views.
-        </p>
+        <p className="mb-1"><strong>How to Use:</strong> Draw wavy lines on the grid where you see distortion.</p>
+        <p className="mb-1">Click <em>Next</em> to integrate the stroke into the nearest grid line.</p>
+        <p>Use <em>Reset</em> to clear the grid, or toggle between Distorted/Undistorted views.</p>
       </div>
       <AmslerGrid
         ref={gridRef}
@@ -227,28 +192,23 @@ export default function FinalAmslerGridApp() {
         <button
           onClick={() => gridRef.current.integrateStroke()}
           className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Next
-        </button>
+        >Next</button>
         <button
           onClick={() => gridRef.current.resetGrid()}
           className="bg-gray-500 text-white px-4 py-2 rounded"
-        >
-          Reset
-        </button>
+        >Reset</button>
         <button
-          onClick={() => setInverseView((v) => !v)}
+          onClick={() => setInverseView(v => !v)}
           className="bg-green-500 text-white px-4 py-2 rounded"
-        >
-          {inverseView ? "Distorted View" : "Undistorted View"}
-        </button>
+        >{inverseView ? "Distorted View" : "Undistorted View"}</button>
       </div>
-      {/* Powered by footer without logo import */}
+      {/* Powered by footer */}
       <div className="mt-4 text-center">
-        <span className="text-blue-600 text-sm">
-          Powered by University of South Australia
-        </span>
+        <span className="text-blue-600 text-sm">Powered by University of South Australia</span>
       </div>
     </div>
   );
 }
+
+// Mount the React app
+ReactDOM.render(<FinalAmslerGridApp />, document.getElementById('root'));
