@@ -1,16 +1,24 @@
+<!-- File: index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Interactive Amsler Grid</title>
+  <title>Interactive 20×20 Amsler Grid</title>
+  <!-- React and ReactDOM via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel Standalone for in-browser JSX transformation -->
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; background-color: #f9f9f9; }
+    #root { display: flex; justify-content: center; padding-top: 40px; }
+    .border { border: 1px solid #000; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
-  <!-- This line must point exactly to app.js -->
+  <!-- Load React code with Babel transformer -->
   <script type="text/babel" src="app.js"></script>
 </body>
 </html>
