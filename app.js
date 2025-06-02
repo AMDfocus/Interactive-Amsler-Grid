@@ -1,13 +1,13 @@
-// In-browser React code; no module.exports or import statements
+// In-browser React code (no exports/imports)
 const { useRef, useState, useEffect, forwardRef, useImperativeHandle } = React;
 
-// AmslerGrid component (pure Canvas draw)
+// AmslerGrid: draws a 20×20 grid, supports freehand strokes, and can apply an inverse warp per line
 const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortionChange, inverse = false }, ref) => {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
-  const [lines, setLines] = useState([]);
+  const [lines, setLines] = useState([]);           // stored raw strokes
   const [currentLine, setCurrentLine] = useState([]);
-  const [integratedLines, setIntegratedLines] = useState([]);
+  const [integratedLines, setIntegratedLines] = useState([]); // one entry per grid line index
 
   useImperativeHandle(ref, () => ({ integrateStroke, resetGrid }));
 
@@ -25,25 +25,26 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
     const divisions = 20;
     const stepX = parseInt(width) / divisions;
     const stepY = parseInt(height) / divisions;
-    const centerX = parseInt(width) / 2;
-    const centerY = parseInt(height) / 2;
-    const dotRadius = Math.min(stepX, stepY) * 0.2;
 
+    // Draw all gridlines or warped lines
     for (let i = 0; i <= divisions; i++) {
-      // Draw vertical line i
+      // Vertical line at x = i*stepX
       ctx.beginPath();
       const vLine = integratedLines.find(l => l.type === "v" && l.index === i);
       if (vLine) {
-        const pts = inverse
-          ? vLine.points.map(p => ({ x: 2 * centerX - p.x, y: p.y }))
+        // If inverse, compute inverse-warp points about baseX = i*stepX
+        const baseX = i * stepX;
+        const curvePts = inverse
+          ? vLine.points.map(p => ({ x: 2 * baseX - p.x, y: p.y }))
           : vLine.points;
-        ctx.moveTo(pts[0].x, 0);
-        ctx.lineTo(pts[0].x, pts[0].y);
-        pts.forEach(p => ctx.lineTo(p.x, p.y));
-        ctx.lineTo(pts[pts.length - 1].x, parseInt(height));
+        ctx.moveTo(curvePts[0].x, 0);
+        ctx.lineTo(curvePts[0].x, curvePts[0].y);
+        curvePts.forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.lineTo(curvePts[curvePts.length - 1].x, parseInt(height));
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
       } else {
+        // draw straight
         ctx.moveTo(i * stepX, 0);
         ctx.lineTo(i * stepX, parseInt(height));
         ctx.strokeStyle = "#000";
@@ -51,17 +52,18 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
       }
       ctx.stroke();
 
-      // Draw horizontal line i
+      // Horizontal line at y = i*stepY
       ctx.beginPath();
       const hLine = integratedLines.find(l => l.type === "h" && l.index === i);
       if (hLine) {
-        const pts = inverse
-          ? hLine.points.map(p => ({ x: p.x, y: 2 * centerY - p.y }))
+        const baseY = i * stepY;
+        const curvePts = inverse
+          ? hLine.points.map(p => ({ x: p.x, y: 2 * baseY - p.y }))
           : hLine.points;
-        ctx.moveTo(0, pts[0].y);
-        ctx.lineTo(pts[0].x, pts[0].y);
-        pts.forEach(p => ctx.lineTo(p.x, p.y));
-        ctx.lineTo(parseInt(width), pts[pts.length - 1].y);
+        ctx.moveTo(0, curvePts[0].y);
+        ctx.lineTo(curvePts[0].x, curvePts[0].y);
+        curvePts.forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.lineTo(parseInt(width), curvePts[curvePts.length - 1].y);
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
       } else {
@@ -73,13 +75,13 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
       ctx.stroke();
     }
 
-    // Draw central dot
+    // Draw central red dot
     ctx.fillStyle = "red";
     ctx.beginPath();
-    ctx.arc(centerX, centerY, dotRadius, 0, 2 * Math.PI);
+    ctx.arc(parseInt(width) / 2, parseInt(height) / 2, Math.min(parseInt(width), parseInt(height)) / 40, 0, 2 * Math.PI);
     ctx.fill();
 
-    // Draw freehand stroke in red
+    // Draw current freehand stroke in red
     if (drawing && currentLine.length > 1) {
       ctx.beginPath();
       ctx.moveTo(currentLine[0].x, currentLine[0].y);
@@ -91,9 +93,7 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
   }, [integratedLines, currentLine, drawing, width, height, inverse]);
 
   useEffect(() => {
-    if (onDistortionChange) {
-      onDistortionChange(integratedLines);
-    }
+    if (onDistortionChange) onDistortionChange(integratedLines);
   }, [integratedLines, onDistortionChange]);
 
   const handleMouseDown = e => { setCurrentLine([getPoint(e)]); setDrawing(true); };
@@ -103,17 +103,25 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
   function integrateStroke() {
     const stroke = drawing ? currentLine : (lines[lines.length - 1] || []);
     if (!stroke.length) return;
+
+    // Determine if stroke is more vertical or horizontal
     const xs = stroke.map(p => p.x), ys = stroke.map(p => p.y);
     const dx = Math.max(...xs) - Math.min(...xs);
     const dy = Math.max(...ys) - Math.min(...ys);
     const divisions = 20;
     const stepX = parseInt(width) / divisions;
     const stepY = parseInt(height) / divisions;
+
     let type, index, pts;
     if (dx < dy) {
+      // vertical stroke -> warp a vertical grid line
       type = "v";
-      index = Math.round(xs.reduce((a, b) => a + b, 0) / xs.length / stepX);
-      const sorted = stroke.slice().sort((a, b) => a.y - b.y);\n      const f = y => {
+      index = Math.round(
+        xs.reduce((sum, x) => sum + x, 0) / xs.length / stepX
+      );
+      // sort by y, then interpolate x for each row position
+      const sorted = stroke.slice().sort((a, b) => a.y - b.y);
+      const interpX = y => {
         if (y <= sorted[0].y) return sorted[0].x;
         if (y >= sorted[sorted.length - 1].y) return sorted[sorted.length - 1].x;
         for (let i = 0; i < sorted.length - 1; i++) {
@@ -124,12 +132,15 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
           }
         }
       };
-      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: f(i * stepY), y: i * stepY }));
+      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: interpX(i * stepY), y: i * stepY }));
     } else {
+      // horizontal stroke -> warp a horizontal grid line
       type = "h";
-      index = Math.round(ys.reduce((a, b) => a + b, 0) / ys.length / stepY);
+      index = Math.round(
+        ys.reduce((sum, y) => sum + y, 0) / ys.length / stepY
+      );
       const sorted = stroke.slice().sort((a, b) => a.x - b.x);
-      const f = x => {
+      const interpY = x => {
         if (x <= sorted[0].x) return sorted[0].y;
         if (x >= sorted[sorted.length - 1].x) return sorted[sorted.length - 1].y;
         for (let i = 0; i < sorted.length - 1; i++) {
@@ -140,13 +151,18 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
           }
         }
       };
-      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: i * stepX, y: f(i * stepX) }));
+      pts = Array.from({ length: divisions + 1 }, (_, i) => ({ x: i * stepX, y: interpY(i * stepX) }));
     }
+
     setIntegratedLines(prev => [...prev, { type, index, points: pts }]);
     setCurrentLine([]);
   }
 
-  function resetGrid() { setLines([]); setCurrentLine([]); setIntegratedLines([]); }
+  function resetGrid() {
+    setLines([]);
+    setCurrentLine([]);
+    setIntegratedLines([]);
+  }
 
   return (
     <canvas
@@ -161,20 +177,18 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
   );
 });
 
-// App: renders only the AmslerGrid with external controls
+// App: renders the grid plus controls
 function FinalAmslerGridApp() {
   const gridRef = useRef();
   const [inverseView, setInverseView] = useState(false);
-  const handleDistortions = lines => {
-    console.log("Distortions:", lines);
-  };
+  const handleDistortions = lines => console.log("Distortions:", lines);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px' }}>
       <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF', marginBottom: '16px' }}>
         Interactive 20×20 Amsler Grid
       </h2>
-      {/* How-to-use section */}
+      {/* How-to-use instructions */}
       <div style={{ marginBottom: '16px', textAlign: 'center' }}>
         <p style={{ marginBottom: '4px' }}><strong>How to Use:</strong> Draw wavy lines on the grid where you see distortion.</p>
         <p style={{ marginBottom: '4px' }}>Click <em>Next</em> to integrate the stroke into the nearest grid line.</p>
@@ -209,5 +223,5 @@ function FinalAmslerGridApp() {
   );
 }
 
-// Mount the React app
+// Mount React app
 ReactDOM.render(<FinalAmslerGridApp />, document.getElementById('root'));
