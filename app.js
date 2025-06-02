@@ -1,7 +1,7 @@
-// In-browser React code; do NOT use any "export" or "exports" syntax.
+// In-browser React code; no module.exports or import statements
 const { useRef, useState, useEffect, forwardRef, useImperativeHandle } = React;
 
-// AmslerGrid component (no exports)
+// AmslerGrid component (pure Canvas draw)
 const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortionChange, inverse = false }, ref) => {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
@@ -113,8 +113,7 @@ const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortion
     if (dx < dy) {
       type = "v";
       index = Math.round(xs.reduce((a, b) => a + b, 0) / xs.length / stepX);
-      const sorted = stroke.slice().sort((a, b) => a.y - b.y);
-      const f = y => {
+      const sorted = stroke.slice().sort((a, b) => a.y - b.y);\n      const f = y => {
         if (y <= sorted[0].y) return sorted[0].x;
         if (y >= sorted[sorted.length - 1].y) return sorted[sorted.length - 1].x;
         for (let i = 0; i < sorted.length - 1; i++) {
@@ -171,12 +170,14 @@ function FinalAmslerGridApp() {
   };
 
   return (
-    <div className="flex flex-col items-center p-4">
-      <h2 className="text-3xl font-bold text-blue-600 mb-4">Interactive 20×20 Amsler Grid</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E40AF', marginBottom: '16px' }}>
+        Interactive 20×20 Amsler Grid
+      </h2>
       {/* How-to-use section */}
-      <div className="mb-4 text-center">
-        <p className="mb-1"><strong>How to Use:</strong> Draw wavy lines on the grid where you see distortion.</p>
-        <p className="mb-1">Click <em>Next</em> to integrate the stroke into the nearest grid line.</p>
+      <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+        <p style={{ marginBottom: '4px' }}><strong>How to Use:</strong> Draw wavy lines on the grid where you see distortion.</p>
+        <p style={{ marginBottom: '4px' }}>Click <em>Next</em> to integrate the stroke into the nearest grid line.</p>
         <p>Use <em>Reset</em> to clear the grid, or toggle between Distorted/Undistorted views.</p>
       </div>
       <AmslerGrid
@@ -186,23 +187,23 @@ function FinalAmslerGridApp() {
         inverse={inverseView}
         onDistortionChange={handleDistortions}
       />
-      <div className="mt-2 space-x-2">
+      <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
         <button
           onClick={() => gridRef.current.integrateStroke()}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          style={{ backgroundColor: '#3B82F6', color: '#FFFFFF', padding: '8px 16px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >Next</button>
         <button
           onClick={() => gridRef.current.resetGrid()}
-          className="bg-gray-500 text-white px-4 py-2 rounded"
+          style={{ backgroundColor: '#6B7280', color: '#FFFFFF', padding: '8px 16px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >Reset</button>
         <button
           onClick={() => setInverseView(v => !v)}
-          className="bg-green-500 text-white px-4 py-2 rounded"
+          style={{ backgroundColor: '#10B981', color: '#FFFFFF', padding: '8px 16px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >{inverseView ? "Distorted View" : "Undistorted View"}</button>
       </div>
       {/* Powered by footer */}
-      <div className="mt-4 text-center">
-        <span className="text-blue-600 text-sm">Powered by University of South Australia</span>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <span style={{ color: '#1E40AF', fontSize: '14px' }}>Powered by University of South Australia</span>
       </div>
     </div>
   );
