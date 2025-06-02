@@ -1,31 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Interactive 20×20 Amsler Grid</title>
-  <!-- Pull in React + ReactDOM from a CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Pull in Babel so we can transform JSX on the fly -->
-  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      background-color: #f9f9f9;
-    }
-    #root {
-      display: flex;
-      justify-content: center;
-      padding-top: 40px;
-    }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-
-  <!-- Load our React code (see below) -->
-  <script type="text/babel" src="app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive Amsler Grid</title>
+    <!-- these file names might differ based on your build: -->
+    <link rel="stylesheet" href="./static/css/main.xxxxxx.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="./static/js/main.xxxxxx.js"></script>
+  </body>
 </html>
