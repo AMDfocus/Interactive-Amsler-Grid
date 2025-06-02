@@ -1,9 +1,7 @@
-/** File: app.js **/
-// We are using Babel Standalone, so avoid any ES module or CommonJS syntax (no 'export' or 'imports').
+// In-browser React code; do NOT use any "export" or "exports" syntax.
 const { useRef, useState, useEffect, forwardRef, useImperativeHandle } = React;
 
-// AmslerGrid: renders a 10cm×10cm grid subdivided into 20×20 boxes with central dot,
-// supports freehand marking, and exposes integrateStroke & reset via ref, can toggle inverse view
+// AmslerGrid component (no exports)
 const AmslerGrid = forwardRef(({ width = "400px", height = "400px", onDistortionChange, inverse = false }, ref) => {
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
